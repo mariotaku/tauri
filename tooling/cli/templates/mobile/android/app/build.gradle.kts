@@ -14,8 +14,8 @@ android {
         applicationId = "{{reverse-domain app.domain}}.{{snake-case app.name}}"
         minSdk = {{android.min-sdk-version}}
         targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = (project.findProperty("tauri.android.versionCode") as? String)?.toIntOrNull() ?: 1
+        versionName = project.findProperty("tauri.android.versionName") as? String ?: "1.0"
     }
     buildTypes {
         getByName("debug") {
