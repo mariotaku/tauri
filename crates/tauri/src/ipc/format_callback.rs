@@ -94,8 +94,15 @@ pub fn format_raw(function_name: CallbackFn, json_string: String) -> crate::Resu
   serialize_js_with(json_string, Default::default(), |arg| {
     format!(
       r#"
-    if (window["_{fn}"]) {{
-      window["_{fn}"]({arg})
+    var wnd = window;
+    for (let i = 0; i < window.frames.length; i++) {{
+      if (window.frames[i]["_{fn}"]) {{
+        wnd = window.frames[i];
+        break;
+      }}
+    }}
+    if (wnd["_{fn}"]) {{
+      wnd["_{fn}"]({arg})
     }} else {{
       console.warn("[TAURI] Couldn't find callback id {fn} in window. This happens when the app is reloaded while Rust is running an asynchronous operation.")
     }}"#,
@@ -232,11 +239,11 @@ mod test {
     // call format callback
     let fc = format(f, &a).unwrap();
     fc.contains(&format!(
-      r#"window["_{}"](JSON.parse('{}'))"#,
+      r#"wnd["_{}"](JSON.parse('{}'))"#,
       f.0,
       serde_json::Value::String(a.clone()),
     )) || fc.contains(&format!(
-      r#"window["_{}"]({})"#,
+      r#"wnd["_{}"]({})"#,
       f.0,
       serde_json::Value::String(a),
     ))
@@ -252,7 +259,7 @@ mod test {
     };
 
     resp.contains(&format!(
-      r#"window["_{}"]({})"#,
+      r#"wnd["_{}"]({})"#,
       function.0,
       serde_json::Value::String(value),
     ))
@@ -316,8 +323,8 @@ mod test {
     let a = a.0;
     // call format callback
     let fc = format_raw(f, a.clone()).unwrap();
-    fc.contains(&format!(r#"window["_{}"](JSON.parse('{}'))"#, f.0, a))
-      || fc.contains(&format!(r#"window["_{}"]({})"#, f.0, a))
+    fc.contains(&format!(r#"wnd["_{}"](JSON.parse('{}'))"#, f.0, a))
+      || fc.contains(&format!(r#"wnd["_{}"]({})"#, f.0, a))
   }
 
   // check arbitrary strings in format_result
@@ -330,6 +337,6 @@ mod test {
       Err(e) => (ec, e),
     };
 
-    resp.contains(&format!(r#"window["_{}"]({})"#, function.0, value))
+    resp.contains(&format!(r#"wnd["_{}"]({})"#, function.0, value))
   }
 }
