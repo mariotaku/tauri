@@ -96,9 +96,13 @@ pub fn format_raw(function_name: CallbackFn, json_string: String) -> crate::Resu
       r#"
     var wnd = window;
     for (let i = 0; i < window.frames.length; i++) {{
-      if (window.frames[i]["_{fn}"]) {{
-        wnd = window.frames[i];
-        break;
+      try {{
+        if (window.frames[i]["_{fn}"]) {{
+          wnd = window.frames[i];
+          break;
+        }}
+      }} catch (e) {{
+        // ignore cross-origin errors
       }}
     }}
     if (wnd["_{fn}"]) {{
